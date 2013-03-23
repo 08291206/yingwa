@@ -9,7 +9,7 @@ if not A_IsAdmin
 {
    run *RunAs "%A_ScriptFullPath%",,UseErrorLevel  ; Requires v1.0.92.01+
    if ErrorLevel
-  {
+	{
 		msgbox,16,Yingwa Client, This program cannot run without administrative privileges.
 		ExitApp
 	}
@@ -44,6 +44,10 @@ SetTitleMatchMode, 2
 DetectHiddenWindows, On
 setting_dir=%A_ScriptDir%
 privoxy_dir=%A_ScriptDir%\privoxy
+
+
+iniread,ssocks_run, %setting_dir%\user.ini, variables, ssocks_run,0	
+
 
 menu, tray, add,Show menu, ClickHandler
 Menu, Tray, Default,Show menu
@@ -97,37 +101,6 @@ Gui1 := WinExist()
 OnMessage( "0x112", "WM_SYSCOMMAND" ) 
 Gui,1: Show, w227 h180, %program_name%
 return
-;miminize to tray
-WM_SYSCOMMAND( wParam, lParam, Msg, hWnd ) {
-  Global R 
-  If (A_Gui && wParam=0xF020) {
-    MinimizeGuiToTray( R, hWnd )
-    Return 0
-}}
-
-MinimizeGuiToTray( ByRef R, hGui ) { ; www.autohotkey.com/forum/viewtopic.php?p=214612#214612 
-  WinGetPos, X0,Y0,W0,H0, % "ahk_id " (Tray:=WinExist("ahk_class Shell_TrayWnd")) 
-  ControlGetPos, X1,Y1,W1,H1, TrayNotifyWnd1,ahk_id %Tray% 
-  SW:=A_ScreenWidth,SH:=A_ScreenHeight,X:=SW-W1,Y:=SH-H1,P:=((Y0>(SH/3))?("B"):(X0>(SW/3)) 
-  ? ("R"):((X0<(SW/3))&&(H0<(SH/3)))?("T"):("L")),((P="L")?(X:=X1+W0):(P="T")?(Y:=Y1+H0):) 
-  VarSetCapacity(R,32,0), DllCall( "GetWindowRect",UInt,hGui,UInt,&R) 
-  NumPut(X,R,16), NumPut(Y,R,20), DllCall("RtlMoveMemory",UInt,&R+24,UInt,&R+16,UInt,8 ) 
-  DllCall("DrawAnimatedRects", UInt,hGui, Int,3, UInt,&R, UInt,&R+16 ) 
-  ;WinHide, ahk_id %hGui%
-  gui, 1:destroy
-TrayTip, Yingwa, I am here! Click to show menu.
-SetTimer, RemoveTrayTip, -3000  
-}
-
-Menu( MenuName, Cmd, P3="", P4="", P5="" ) { 
-  Menu, %MenuName%, %Cmd%, %P3%, %P4%, %P5% 
-Return errorLevel 
-}
-
-GuiShow: 
-  DllCall("DrawAnimatedRects", UInt,Gui1, Int,3, UInt,&R+16, UInt,&R ) 
-  Gui, Show 
-Return
 
 RemoveTrayTip:
 TrayTip
@@ -151,7 +124,7 @@ run, http://breakwallvpn.com
 return
 connect_button:
 gui, 1:destroy
-if (connected=1) ;如果当前已是连接状态，连接则为断开连接,same command two functions
+if (connected=1) ;disconnect if connected
 {	
 	
 	splashtexton,,,Disconnecting...	
@@ -280,7 +253,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0 ;放在后面
+		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
 	}
 	else
 	if (action=="connect")
@@ -363,4 +336,31 @@ WM_QUERYENDSESSION(wParam, lParam)
 		return true
 	}
 	
+}
+
+;miminize to tray
+WM_SYSCOMMAND( wParam, lParam, Msg, hWnd ) {
+  Global R 
+  If (A_Gui && wParam=0xF020) {
+    MinimizeGuiToTray( R, hWnd )
+    Return 0
+}}
+
+MinimizeGuiToTray( ByRef R, hGui ) { ; www.autohotkey.com/forum/viewtopic.php?p=214612#214612 
+  WinGetPos, X0,Y0,W0,H0, % "ahk_id " (Tray:=WinExist("ahk_class Shell_TrayWnd")) 
+  ControlGetPos, X1,Y1,W1,H1, TrayNotifyWnd1,ahk_id %Tray% 
+  SW:=A_ScreenWidth,SH:=A_ScreenHeight,X:=SW-W1,Y:=SH-H1,P:=((Y0>(SH/3))?("B"):(X0>(SW/3)) 
+  ? ("R"):((X0<(SW/3))&&(H0<(SH/3)))?("T"):("L")),((P="L")?(X:=X1+W0):(P="T")?(Y:=Y1+H0):) 
+  VarSetCapacity(R,32,0), DllCall( "GetWindowRect",UInt,hGui,UInt,&R) 
+  NumPut(X,R,16), NumPut(Y,R,20), DllCall("RtlMoveMemory",UInt,&R+24,UInt,&R+16,UInt,8 ) 
+  DllCall("DrawAnimatedRects", UInt,hGui, Int,3, UInt,&R, UInt,&R+16 ) 
+  ;WinHide, ahk_id %hGui%
+  gui, 1:destroy
+TrayTip, Yingwa, I am here! Click to show menu.
+SetTimer, RemoveTrayTip, -3000  
+}
+
+Menu( MenuName, Cmd, P3="", P4="", P5="" ) { 
+  Menu, %MenuName%, %Cmd%, %P3%, %P4%, %P5% 
+Return errorLevel 
 }
