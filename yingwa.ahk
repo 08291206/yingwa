@@ -92,7 +92,8 @@ Gui, 1: Add, Edit, vpassword gsave x90 y59 w130 h20 , %password%
 Gui, 1: Add, Text, x12 y99 w80 h20 , Server Port:
 Gui, 1: Add, Edit, vs_port gsave x90 y99 w130 h20 , %s_port%
 gui, 1: Font, cblue 
-Gui, 1: Add, Text, x12 y145 w100 h20 gopen_site, breakwallvpn.com
+Gui, 1: Add, Text, x12 y135 w100 h20 gopen_site, breakwallvpn.com
+Gui, 1: Add, Text, x12 y155 w100 h20 gopen_site2, ut2.tv
 gui, 1: Font, cblack 
 Gui, 1: Add, Button, x120 y139 w100 h30 Default gconnect_button, %connect_bu%
 ; Generated using SmartGui, 1: Creator for SciTE
@@ -121,6 +122,9 @@ goto, connect_button
 return 
 open_site:
 run, http://breakwallvpn.com
+return
+open_site2:
+run, http://ut2.tv
 return
 connect_button:
 gui, 1:destroy
