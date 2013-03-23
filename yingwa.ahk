@@ -59,7 +59,7 @@ Menu, Tool, Default,Connect
 
 Menu, Tool, Add,Setup, setup
 ;Menu, Tool, Add,Show log, logfile
-;menu, tool, add, About, about
+menu, tool, add, About, about
 Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
@@ -218,7 +218,7 @@ gui, 1:Destroy
 Msg:="Yingwa Shadowsocks Client " . version . "`nFirst released on 2013-03-23`nCoded by Chao Yi Fan`n`n" 
 msg.="Autohotkey version: " . A_AhkVersion . "`n"
 msg.="Icon designed by Double-J Design and edited using icoFX`n`n"
-msg.="This program uses work of autohotkey, microsoft, Privoxy and clowwindy.`n`n"
+msg.="This program uses work of autohotkey, microsoft, Privoxy, Yufei Chen and clowwindy.`n`n"
 msg.="Shadowsocks is written by clowwindy.`n`n"
 msg.="What a wonder404 world."
 MsgBox, 64, About,  %Msg%, 
@@ -338,7 +338,7 @@ WM_QUERYENDSESSION(wParam, lParam)
 	}
 	if (connected=1)
 	{
-		MsgBox, 36,Yingwa, Click Yes to restore your proxy settings.
+		MsgBox, 36,Yingwa,  Click Yes to restore your proxy settings and continue %EventType%.
 		ifmsgbox, Yes
 		{
 			disconnect_me()
