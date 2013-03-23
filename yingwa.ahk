@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa 0.1"
-version:= "0.01.130323" 
+version:= "0.01.130324" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
