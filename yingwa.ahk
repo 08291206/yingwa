@@ -45,10 +45,6 @@ DetectHiddenWindows, On
 setting_dir=%A_ScriptDir%
 privoxy_dir=%A_ScriptDir%\privoxy
 
-
-iniread,ssocks_run, %setting_dir%\user.ini, variables, ssocks_run,0	
-
-
 menu, tray, add,Show menu, ClickHandler
 Menu, Tray, Default,Show menu
 Menu, Tray, Add, Exit, ExitLabel
