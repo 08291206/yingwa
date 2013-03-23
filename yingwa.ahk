@@ -336,7 +336,7 @@ WM_QUERYENDSESSION(wParam, lParam)
 			EventType = Shutdown
 			shutdown_code = 9
 	}
-	if (connected:=1)
+	if (connected=1)
 	{
 		MsgBox, 36,Yingwa, Click Yes to restore your proxy settings.
 		ifmsgbox, Yes
