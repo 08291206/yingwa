@@ -83,7 +83,7 @@ else
 iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
 iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
 iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
-
+restore_interface := 1
 
 Gui, 1: Add, Text, x12 y19 w80 h20 , Server IP:
 Gui, 1: Add, Edit, vip gsave x90 y19 w130 h20 , %ip%
@@ -253,7 +253,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0
+		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
 	}
 	else
 	if (action=="connect")
