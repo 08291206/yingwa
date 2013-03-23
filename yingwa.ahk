@@ -253,7 +253,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
+		disable_dbl_click := 0
 	}
 	else
 	if (action=="connect")
@@ -358,9 +358,4 @@ MinimizeGuiToTray( ByRef R, hGui ) { ; www.autohotkey.com/forum/viewtopic.php?p=
   gui, 1:destroy
 TrayTip, Yingwa, I am here! Click to show menu.
 SetTimer, RemoveTrayTip, -3000  
-}
-
-Menu( MenuName, Cmd, P3="", P4="", P5="" ) { 
-  Menu, %MenuName%, %Cmd%, %P3%, %P4%, %P5% 
-Return errorLevel 
 }
