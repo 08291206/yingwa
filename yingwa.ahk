@@ -328,15 +328,23 @@ WM_QUERYENDSESSION(wParam, lParam)
 {
     global
 	ENDSESSION_LOGOFF = 0x80000000
-    if (lParam & ENDSESSION_LOGOFF)  ; User is logging off.
-        EventType = Logoff
-    else  ; System is either shutting down or restarting.
-        EventType = Shutdown
-	if (method=3)
+    if (lParam & ENDSESSION_LOGOFF){
+			EventType = Logoff
+			shutdown_code = 0
+	}
+    else{
+			EventType = Shutdown
+			shutdown_code = 1
+	}
+	if (connected:=1)
 	{
-		MsgBox, 36,Yingwa, Click Yes to restore your proxy settings and exit Yingwa.
-		ifmsgbox, Yes		
-			exitapp
+		MsgBox, 36,Yingwa, Click Yes to restore your proxy settings.
+		ifmsgbox, Yes
+		{
+			disconnect_me()
+			change_status("disconnect")
+			shutdown,%shutdown_code%
+		}		
 		return true
 	}
 	
