@@ -334,7 +334,7 @@ WM_QUERYENDSESSION(wParam, lParam)
 	}
     else{
 			EventType = Shutdown
-			shutdown_code = 1
+			shutdown_code = 9
 	}
 	if (connected:=1)
 	{
