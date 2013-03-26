@@ -1,6 +1,6 @@
 #SingleInstance off ;
-program_name:="Yingwa 0.1"
-version:= "0.01.130324" 
+program_name:="Yingwa"
+version:= "0.02.130327" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -21,7 +21,7 @@ OnMessage(0x11, "WM_QUERYENDSESSION")
 ;end detect
 
 
-if (Is64Bit()){
+if (A_Is64bitOS){
 	ssocks_exe = ssocks64.exe
 }else{
 	ssocks_exe = ssocks32.exe
@@ -83,36 +83,114 @@ else
 iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
 iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
 iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
-restore_interface := 1
+iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+iniread ,selected_profile, %setting_dir%\user.ini, variables, selected_profile,1
 
-Gui, 1: Add, Text, x12 y19 w80 h20 , Server IP:
-Gui, 1: Add, Edit, vip gsave x90 y19 w130 h20 , %ip%
-Gui, 1: Add, Text, x12 y59 w80 h20 , Password:
-Gui, 1: Add, Edit, vpassword gsave x90 y59 w130 h20 , %password%
-Gui, 1: Add, Text, x12 y99 w80 h20 , Server Port:
-Gui, 1: Add, Edit, vs_port gsave x90 y99 w130 h20 , %s_port%
+stringreplace,profiles_dropdown, profiles, ````,|,All
+stringreplace,profiles_dropdown,profiles_dropdown,``,,all
+
+
+;stringsplit,profiles_arr, dropdown_str,|
+
+
+restore_interface := 1
+Gui, 1: Add, Text, x12 y19 w80 h20 , Profile:
+gui, 1: Add, DropDownList , vselected_profile gsave_dropdown  choose%selected_profile% AltSubmit x90 y19 w130, %profiles_dropdown%
+Gui, 1: Add, Text, x12 y59 w80 h20 , Server IP:
+Gui, 1: Add, Edit, vip gsave x90 y59 w130 h20 , %ip%
+Gui, 1: Add, Text, x12 y99 w80 h20 , Password:
+Gui, 1: Add, Edit, vpassword gsave x90 y99 w130 h20 , %password%
+Gui, 1: Add, Text, x12 y139 w80 h20 , Server Port:
+Gui, 1: Add, Edit, vs_port gsave x90 y139 w130 h20 , %s_port%
+Gui, 1: Add, Button, x12 y179 w40 h30 gsave_profile, Save
+Gui, 1: Add, Button, x52 y179 w50 h30 gdel_profile, Delete
+Gui, 1: Add, Button, x120 y179 w100 h30 Default gconnect_button, %connect_bu%
+
 gui, 1: Font, cblue 
-Gui, 1: Add, Text, x12 y135 w100 h20 gopen_site, breakwallvpn.com
-Gui, 1: Add, Text, x12 y155 w100 h20 gopen_site2, ut2.tv
+Gui, 1: Add, Text, x120 y219 w100 h20 gopen_site, breakwallvpn.com
+Gui, 1: Add, Text, x12 y219 w100 h20 gopen_site2, ut2.tv
 gui, 1: Font, cblack 
-Gui, 1: Add, Button, x120 y139 w100 h30 Default gconnect_button, %connect_bu%
 ; Generated using SmartGui, 1: Creator for SciTE
 Gui +LastFound -Resize -MaximizeBox
 Gui1 := WinExist() 
 OnMessage( "0x112", "WM_SYSCOMMAND" ) 
-Gui,1: Show, w227 h180, %program_name%
+Gui,1: Show, w227 h250, %program_name% %version%
 return
 
 RemoveTrayTip:
 TrayTip
 return
 
-save:
+save_profile:
 gui, 1:submit, nohide 
+
+inputbox , profile_name,%program_name% %version%,Enter a name for this profile,,,,,,,,%ip%:%s_port%
+if ErrorLevel
+    return
+
+iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+if (InStr(profiles, "``" . profile_name . "``")){
+	MsgBox, 262180, %program_name% %version%, Another profile with the same name already exists. Overwrite?
+	ifmsgbox, No
+		return
+}else{
+	profiles := profiles . "``" . profile_name . "``"
+	iniwrite ,%profiles%, %setting_dir%\user.ini, variables, profiles
+	stringreplace,profiles_dropdown, profiles, ````,|,All
+	stringreplace,profiles_dropdown,profiles_dropdown,``,,all
+	guicontrol,,selected_profile,|%profiles_dropdown%
+	max_index := profile_max_index()
+	guicontrol,choose,selected_profile,%max_index%
+}
+
+iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
+iniwrite ,%password%, %setting_dir%\user.ini, %profile_name%, Password
+iniwrite ,%s_port%, %setting_dir%\user.ini, %profile_name%, s_port
+return
+del_profile:
+gui, 1:submit, nohide 
+iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+profile_name := profile_no2name(selected_profile)
+stringreplace,profiles,profiles,``%profile_name%``,,All
+iniwrite ,%profiles%, %setting_dir%\user.ini, variables, profiles
+if (selected_profile>1){	
+	selected_profile := selected_profile -1	
+}else{
+	selected_profile := profile_max_index()
+}
+
+stringreplace,profiles_dropdown, profiles, ````,|,All
+stringreplace,profiles_dropdown,profiles_dropdown,``,,all
+guicontrol,,selected_profile,|%profiles_dropdown%
+guicontrol,choose,selected_profile,%selected_profile%
+goto, save_dropdown
+return
+save_dropdown:
+gui, 1:submit, nohide 
+profile_name := profile_no2name(selected_profile)
+
+if (trim(profile_name)!="") {	
+	iniread ,ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
+	iniread ,password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
+	iniread ,s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%	
+	guicontrol,,ip,%ip%
+	guicontrol,,password,%password%
+	guicontrol,,s_port,%s_port%	
+}
+iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
 iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
 iniwrite ,%password%, %setting_dir%\user.ini, variables, Password
 iniwrite ,%s_port%, %setting_dir%\user.ini, variables, s_port
-iniwrite ,%l_port%, %setting_dir%\user.ini, variables, l_port
+
+return
+
+save:
+gui, 1:submit, nohide 
+;selected_profile
+iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
+iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
+iniwrite ,%password%, %setting_dir%\user.ini, variables, Password
+iniwrite ,%s_port%, %setting_dir%\user.ini, variables, s_port
 return 
 
 quick_connect:
@@ -257,7 +335,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
+		disable_dbl_click := 0 ;放在后面
 	}
 	else
 	if (action=="connect")
@@ -319,10 +397,8 @@ RegRead(RootKey, SubKey, ValueName = "") {
 	Return, v
 }
 
-Is64Bit() {
-	envget temp_str, Processor_Identifier
-   return (RegexMatch(temp_str, "^[^ ]+64") > 0)
-}
+
+
 
 WM_QUERYENDSESSION(wParam, lParam)
 {
@@ -350,6 +426,31 @@ WM_QUERYENDSESSION(wParam, lParam)
 	
 }
 
+profile_no2name(selected_profile){
+	global setting_dir
+	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+	;msgbox inside %profiles%
+	stringreplace,temp_var, profiles, ````,|,All
+	stringreplace,temp_var,temp_var,``,,all
+	StringSplit,profiles_arr,temp_var,|
+	loop,%profiles_arr0% {
+		if (selected_profile = a_index) {
+			profile_name := profiles_arr%a_index%
+		}
+	}
+	max_index := profiles_arr0
+	return, profile_name
+}
+
+profile_max_index(){
+	global setting_dir
+	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+	;msgbox inside %profiles%
+	stringreplace,temp_var, profiles, ````,|,All
+	stringreplace,temp_var,temp_var,``,,all
+	StringSplit,profiles_arr,temp_var,|	
+	return, profiles_arr0	
+}
 ;miminize to tray
 WM_SYSCOMMAND( wParam, lParam, Msg, hWnd ) {
   Global R 
