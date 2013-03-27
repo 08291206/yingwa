@@ -15,7 +15,8 @@ if not A_IsAdmin
 	}
    exitapp
 }
-;detect log off
+
+;detect log off or windows shut down
 DllCall("kernel32.dll\SetProcessShutdownParameters", UInt, 0x4FF, UInt, 0)
 OnMessage(0x11, "WM_QUERYENDSESSION")
 ;end detect
