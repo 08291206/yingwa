@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "0.02.130327" 
+version:= "0.02.130331" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -15,8 +15,7 @@ if not A_IsAdmin
 	}
    exitapp
 }
-
-;detect log off or windows shut down
+;detect log off
 DllCall("kernel32.dll\SetProcessShutdownParameters", UInt, 0x4FF, UInt, 0)
 OnMessage(0x11, "WM_QUERYENDSESSION")
 ;end detect
@@ -142,6 +141,7 @@ if (InStr(profiles, "``" . profile_name . "``")){
 	guicontrol,,selected_profile,|%profiles_dropdown%
 	max_index := profile_max_index()
 	guicontrol,choose,selected_profile,%max_index%
+	iniwrite ,%max_index%, %setting_dir%\user.ini, variables, selected_profile
 }
 
 iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
@@ -336,7 +336,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0 ;放在后面
+		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
 	}
 	else
 	if (action=="connect")
