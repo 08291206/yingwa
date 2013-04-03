@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "0.02.130331" 
+version:= "1.0.130403" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -63,9 +63,14 @@ menu, tool, add, About, about
 Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
-
+option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o5_rc4:"Use rc4 encryption",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
+read_all_ini()
 connected:=0
-goto, setup
+if (o2_auto_connect) {
+	goto, connect_button
+}else {
+	goto, setup
+}
 return
 
 setup:
@@ -80,41 +85,54 @@ else
 {	
 	connect_bu:="&Connect"
 }
-iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
-iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
-iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
-iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
-iniread ,selected_profile, %setting_dir%\user.ini, variables, selected_profile,1
-
+read_all_ini()
 stringreplace,profiles_dropdown, profiles, ````,|,All
 stringreplace,profiles_dropdown,profiles_dropdown,``,,all
 
 
 ;stringsplit,profiles_arr, dropdown_str,|
+profile_name := profile_no2name(selected_profile)
+if (trim(profile_name)!="") {	
+	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
+	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
+	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%
+	;fields changed. New profile
+	if (p_ip!=ip || p_password!=password || p_s_port!=s_port){
+		selected_profile:=0
+	}
+}
 
 
 restore_interface := 1
-Gui, 1: Add, Text, x12 y19 w80 h20 , Profile:
-gui, 1: Add, DropDownList , vselected_profile gsave_dropdown  choose%selected_profile% AltSubmit x90 y19 w130, %profiles_dropdown%
-Gui, 1: Add, Text, x12 y59 w80 h20 , Server IP:
-Gui, 1: Add, Edit, vip gsave x90 y59 w130 h20 , %ip%
-Gui, 1: Add, Text, x12 y99 w80 h20 , Password:
-Gui, 1: Add, Edit, vpassword gsave x90 y99 w130 h20 , %password%
-Gui, 1: Add, Text, x12 y139 w80 h20 , Server Port:
-Gui, 1: Add, Edit, vs_port gsave x90 y139 w130 h20 , %s_port%
-Gui, 1: Add, Button, x12 y179 w40 h30 gsave_profile, Save
-Gui, 1: Add, Button, x52 y179 w50 h30 gdel_profile, Delete
-Gui, 1: Add, Button, x120 y179 w100 h30 Default gconnect_button, %connect_bu%
+Gui, Add, Tab2, x0 y0 w227 h250 , Basic|Geeky
+Gui, 1: Add, Text, x12 y30 w80 h20 , Profile:
+gui, 1: Add, DropDownList , vselected_profile gsave_dropdown  choose%selected_profile% AltSubmit x90 y30 w130, %profiles_dropdown%
+Gui, 1: Add, Text, x12 y60 w80 h20 , Server IP:
+Gui, 1: Add, Edit, vip gsave x90 y60 w130 h20 , %ip%
+Gui, 1: Add, Text, x12 y90 w80 h20 , Password:
+Gui, 1: Add, Edit, vpassword gsave x90 y90 w130 h20 , %password%
+Gui, 1: Add, Text, x12 y120 w80 h20 , Server Port:
+Gui, 1: Add, Edit, vs_port gsave x90 y120 w130 h20 , %s_port%
+Gui, 1: Add, Button, x12 y150 w40 h30 gsave_profile, Save
+Gui, 1: Add, Button, x52 y150 w50 h30 gdel_profile, Delete
+Gui, 1: Add, Button, x120 y150 w100 h30 Default gconnect_button, %connect_bu%
 
 gui, 1: Font, cblue 
-Gui, 1: Add, Text, x120 y219 w100 h20 gopen_site, breakwallvpn.com
-Gui, 1: Add, Text, x12 y219 w100 h20 gopen_site2, ut2.tv
+Gui, 1: Add, Text, x120 y190 w100 h20 gopen_site, breakwallvpn.com
+Gui, 1: Add, Text, x12 y190 w100 h20 gopen_site2, ut2.tv
 gui, 1: Font, cblack 
+Gui, Tab, Geeky
+y_p:=30
+For key, value in option_array {	
+	if_checked := (%key%=1) ? "checked":""
+	Gui, 1: Add, CheckBox, v%key% gsave_option %if_checked% x12 y%y_p% w200 h20 , %value%
+	y_p += 20
+}
 ; Generated using SmartGui, 1: Creator for SciTE
 Gui +LastFound -Resize -MaximizeBox
 Gui1 := WinExist() 
 OnMessage( "0x112", "WM_SYSCOMMAND" ) 
-Gui,1: Show, w227 h250, %program_name% %version%
+Gui,1: Show, w227 h210, %program_name% %version%
 return
 
 RemoveTrayTip:
@@ -142,11 +160,10 @@ if (InStr(profiles, "``" . profile_name . "``")){
 	max_index := profile_max_index()
 	guicontrol,choose,selected_profile,%max_index%
 	iniwrite ,%max_index%, %setting_dir%\user.ini, variables, selected_profile
+	iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
+	iniwrite ,%password%, %setting_dir%\user.ini, %profile_name%, Password
+	iniwrite ,%s_port%, %setting_dir%\user.ini, %profile_name%, s_port
 }
-
-iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
-iniwrite ,%password%, %setting_dir%\user.ini, %profile_name%, Password
-iniwrite ,%s_port%, %setting_dir%\user.ini, %profile_name%, s_port
 return
 del_profile:
 gui, 1:submit, nohide 
@@ -169,14 +186,13 @@ return
 save_dropdown:
 gui, 1:submit, nohide 
 profile_name := profile_no2name(selected_profile)
-
 if (trim(profile_name)!="") {	
-	iniread ,ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
-	iniread ,password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
-	iniread ,s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%	
-	guicontrol,,ip,%ip%
-	guicontrol,,password,%password%
-	guicontrol,,s_port,%s_port%	
+	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
+	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
+	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%		
+	guicontrol,,ip,%p_ip%
+	guicontrol,,password,%p_password%
+	guicontrol,,s_port,%p_s_port%		
 }
 iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
 iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
@@ -188,10 +204,33 @@ return
 save:
 gui, 1:submit, nohide 
 ;selected_profile
+profile_name := profile_no2name(selected_profile)
+if (trim(profile_name)!="") {	
+	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
+	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
+	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%
+	;fields changed. New profile
+	if (p_ip!=ip || p_password!=password || p_s_port!=s_port){
+		guicontrol,choose,selected_profile,0
+	}
+}
+
 iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
 iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
 iniwrite ,%password%, %setting_dir%\user.ini, variables, Password
 iniwrite ,%s_port%, %setting_dir%\user.ini, variables, s_port
+return
+save_option:
+gui, 1:submit, nohide 
+For key in option_array {
+	temp_var := %key%
+	iniwrite ,%temp_var%, %setting_dir%\user.ini, variables, %key%	
+}
+;option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Also tunnel websites in China",o4_filter_ads:"Filter ads",o5_rc4:"Use rc4 encryption",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
+if (o1_auto_start)
+	set_startup("set")
+else
+	set_startup("remove")
 return 
 
 quick_connect:
@@ -223,9 +262,27 @@ if (connected=1) ;disconnect if connected
 
 change_status("connect")
 SplashTextOn, , , connecting...
-iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
-iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
-iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
+read_all_ini()
+FileDelete,%privoxy_dir%\config.txt
+fileread, header,%privoxy_dir%\header.txt
+fileread, filter,%privoxy_dir%\filter.txt
+fileread, whitelist,%privoxy_dir%\whitelist.txt
+config_file := header
+if (!o3_china_sites){				
+	config_file .= whitelist
+}
+if (o4_filter_ads){
+	config_file .= filter
+}
+fileappend,%config_file%,%privoxy_dir%\config.txt
+
+if (o5_rc4){
+	en_method="rc4"
+}else {
+	en_method=null
+}
+
+
 myfile=config.json
 content=
 	(
@@ -235,7 +292,7 @@ content=
     "local_port":65509,
     "password":"%password%",
     "timeout":600,
-    "method":null
+    "method":%en_method%
 }	
 	)
 
@@ -246,7 +303,8 @@ File.Close()
 run, %ssocks_exe%,%A_ScriptDir%,hide,ssocks_pid
 IfWinNotExist,ahk_class PrivoxyLogWindow
 	run, %privoxy_dir%\privoxy.exe,%privoxy_dir%,hide,privoxy_pid
-setproxy("ON")
+if (!o6_manual_proxy)
+	setproxy("ON")
 change_status("connected")
 
 return
@@ -289,6 +347,9 @@ ExitLabel:
 	}
 	winclose,ahk_class PrivoxyLogWindow
 	process, close, privoxy.exe
+	if (o7_clear_info)
+		filedelete, %setting_dir%\user.ini
+		iniwrite ,%o7_clear_info%, %setting_dir%\user.ini, variables, o7_clear_info
 	ExitApp
 
 about:
@@ -310,7 +371,8 @@ disconnect_me()
 	global
 	gui, 1:Destroy
 	settimer, check_if_broken, off
-	setproxy("OFF")
+	if (!o6_manual_proxy)
+		setproxy("OFF")
 	WinActivate,%ssocks_exe%
 	send, ^c
 	sleep, 1000
@@ -336,7 +398,7 @@ global
 		menu,tool,enable,Connect	
 		Menu,Tray, Tip, %tray_tip%				
 		connected:=0
-		disable_dbl_click := 0 ;鏀惧湪鍚庨潰
+		disable_dbl_click := 0 ;放在后面
 	}
 	else
 	if (action=="connect")
@@ -472,4 +534,28 @@ MinimizeGuiToTray( ByRef R, hGui ) { ; www.autohotkey.com/forum/viewtopic.php?p=
   gui, 1:destroy
 TrayTip, Yingwa, I am here! Click to show menu.
 SetTimer, RemoveTrayTip, -3000  
+}
+
+read_all_ini() {
+	global
+	iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
+	iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
+	iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
+	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+	iniread ,selected_profile, %setting_dir%\user.ini, variables, selected_profile,1	
+	For key, value in option_array {		
+			iniread ,%key%, %setting_dir%\user.ini, variables, %key%,0				
+	}
+}
+
+set_startup(action="set") {
+SplitPath, A_Scriptname, , , , OutNameNoExt 
+LinkFile=%A_Startup%\%OutNameNoExt%.lnk 
+	if (action="set") {
+		IfNotExist, %LinkFile% 
+		  FileCreateShortcut, %A_ScriptFullPath%, %LinkFile%   
+		SetWorkingDir, %A_ScriptDir%
+	} else {
+		filedelete, %LinkFile%
+	}
 }
