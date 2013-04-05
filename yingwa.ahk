@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.0.130403" 
+version:= "1.1.130405" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -63,7 +63,7 @@ menu, tool, add, About, about
 Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
-option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o5_rc4:"Use rc4 encryption",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
+option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
 read_all_ini()
 connected:=0
 if (o2_auto_connect) {
@@ -96,12 +96,14 @@ if (trim(profile_name)!="") {
 	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
 	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
 	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%
+	iniread ,p_encryption, %setting_dir%\user.ini, %profile_name%, encryption,1
 	;fields changed. New profile
-	if (p_ip!=ip || p_password!=password || p_s_port!=s_port){
+	if (p_ip!=ip || p_password!=password || p_s_port!=s_port || p_encryption!=encryption){
 		selected_profile:=0
 	}
 }
-
+encryption_checker1 := (encryption=1) ? "checked":""
+encryption_checker2 := (encryption=2) ? "checked":""
 
 restore_interface := 1
 Gui, Add, Tab2, x0 y0 w227 h250 , Basic|Geeky
@@ -113,13 +115,16 @@ Gui, 1: Add, Text, x12 y90 w80 h20 , Password:
 Gui, 1: Add, Edit, vpassword gsave x90 y90 w130 h20 , %password%
 Gui, 1: Add, Text, x12 y120 w80 h20 , Server Port:
 Gui, 1: Add, Edit, vs_port gsave x90 y120 w130 h20 , %s_port%
-Gui, 1: Add, Button, x12 y150 w40 h30 gsave_profile, Save
-Gui, 1: Add, Button, x52 y150 w50 h30 gdel_profile, Delete
-Gui, 1: Add, Button, x120 y150 w100 h30 Default gconnect_button, %connect_bu%
+Gui, 1: Add, Text, x12 y150 w80 h20 , Encryption:
+Gui, 1: Add, radio, vencryption %encryption_checker1% gsave x90 y150 w60 h20 , table
+Gui, 1: Add, radio, gsave %encryption_checker2% x160 y150 w60 h20 , rc4
+Gui, 1: Add, Button, x12 y180 w40 h30 gsave_profile, Save
+Gui, 1: Add, Button, x52 y180 w50 h30 gdel_profile, Delete
+Gui, 1: Add, Button, x120 y180 w100 h30 Default gconnect_button, %connect_bu%
 
 gui, 1: Font, cblue 
-Gui, 1: Add, Text, x120 y190 w100 h20 gopen_site, breakwallvpn.com
-Gui, 1: Add, Text, x12 y190 w100 h20 gopen_site2, ut2.tv
+Gui, 1: Add, Text, x120 y210 w100 h20 gopen_site, breakwallvpn.com
+Gui, 1: Add, Text, x12 y210 w100 h20 gopen_site2, ut2.tv
 gui, 1: Font, cblack 
 Gui, Tab, Geeky
 y_p:=30
@@ -132,7 +137,7 @@ For key, value in option_array {
 Gui +LastFound -Resize -MaximizeBox
 Gui1 := WinExist() 
 OnMessage( "0x112", "WM_SYSCOMMAND" ) 
-Gui,1: Show, w227 h210, %program_name% %version%
+Gui,1: Show, w227 h240, %program_name% %version%
 return
 
 RemoveTrayTip:
@@ -149,21 +154,28 @@ if ErrorLevel
 iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
 if (InStr(profiles, "``" . profile_name . "``")){
 	MsgBox, 262180, %program_name% %version%, Another profile with the same name already exists. Overwrite?
-	ifmsgbox, No
+	ifmsgbox, No 
+	{
 		return
-}else{
-	profiles := profiles . "``" . profile_name . "``"
-	iniwrite ,%profiles%, %setting_dir%\user.ini, variables, profiles
-	stringreplace,profiles_dropdown, profiles, ````,|,All
-	stringreplace,profiles_dropdown,profiles_dropdown,``,,all
-	guicontrol,,selected_profile,|%profiles_dropdown%
-	max_index := profile_max_index()
-	guicontrol,choose,selected_profile,%max_index%
-	iniwrite ,%max_index%, %setting_dir%\user.ini, variables, selected_profile
-	iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
-	iniwrite ,%password%, %setting_dir%\user.ini, %profile_name%, Password
-	iniwrite ,%s_port%, %setting_dir%\user.ini, %profile_name%, s_port
+	}else{
+		;delete first		
+		stringreplace,profiles,profiles,``%profile_name%``,,All
+	}	
 }
+profiles := profiles . "``" . profile_name . "``"
+iniwrite ,%profiles%, %setting_dir%\user.ini, variables, profiles
+
+stringreplace,profiles_dropdown, profiles, ````,|,All
+stringreplace,profiles_dropdown,profiles_dropdown,``,,all
+guicontrol,,selected_profile,|%profiles_dropdown%
+max_index := profile_max_index()
+guicontrol,choose,selected_profile,%max_index%
+iniwrite ,%max_index%, %setting_dir%\user.ini, variables, selected_profile
+iniwrite ,%ip%, %setting_dir%\user.ini, %profile_name%, ip
+iniwrite ,%password%, %setting_dir%\user.ini, %profile_name%, Password
+iniwrite ,%s_port%, %setting_dir%\user.ini, %profile_name%, s_port
+
+iniwrite ,%encryption%, %setting_dir%\user.ini, %profile_name%, encryption
 return
 del_profile:
 gui, 1:submit, nohide 
@@ -190,15 +202,20 @@ if (trim(profile_name)!="") {
 	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
 	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
 	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%		
+	iniread ,p_encryption, %setting_dir%\user.ini, %profile_name%, encryption,1
 	guicontrol,,ip,%p_ip%
 	guicontrol,,password,%p_password%
 	guicontrol,,s_port,%p_s_port%		
+	encryption_checker1 := (p_encryption=1) ? 1:0
+	encryption_checker2 := (p_encryption=2) ? 1:0
+	guicontrol,,encryption,%encryption_checker1%	
+	guicontrol,,rc4,%encryption_checker2%
+	iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
+	iniwrite ,%p_ip%, %setting_dir%\user.ini, variables, ip
+	iniwrite ,%p_password%, %setting_dir%\user.ini, variables, Password
+	iniwrite ,%p_s_port%, %setting_dir%\user.ini, variables, s_port
+	iniwrite ,%p_encryption%, %setting_dir%\user.ini, variables, encryption
 }
-iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
-iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
-iniwrite ,%password%, %setting_dir%\user.ini, variables, Password
-iniwrite ,%s_port%, %setting_dir%\user.ini, variables, s_port
-
 return
 
 save:
@@ -209,8 +226,10 @@ if (trim(profile_name)!="") {
 	iniread ,p_ip, %setting_dir%\user.ini, %profile_name%, ip,%A_Space%
 	iniread ,p_password, %setting_dir%\user.ini, %profile_name%, Password,%A_Space%
 	iniread ,p_s_port, %setting_dir%\user.ini, %profile_name%, s_port,%A_Space%
-	;fields changed. New profile
-	if (p_ip!=ip || p_password!=password || p_s_port!=s_port){
+	iniread ,p_encryption, %setting_dir%\user.ini, %profile_name%, encryption,1
+	;vencryption
+	;fields changed. New profile	
+	if (p_ip!=ip || p_password!=password || p_s_port!=s_port || p_encryption!=encryption){
 		guicontrol,choose,selected_profile,0
 	}
 }
@@ -219,6 +238,7 @@ iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profil
 iniwrite ,%ip%, %setting_dir%\user.ini, variables, ip
 iniwrite ,%password%, %setting_dir%\user.ini, variables, Password
 iniwrite ,%s_port%, %setting_dir%\user.ini, variables, s_port
+iniwrite ,%encryption%, %setting_dir%\user.ini, variables, encryption
 return
 save_option:
 gui, 1:submit, nohide 
@@ -276,7 +296,7 @@ if (o4_filter_ads){
 }
 fileappend,%config_file%,%privoxy_dir%\config.txt
 
-if (o5_rc4){
+if (encryption=2){
 	en_method="rc4"
 }else {
 	en_method=null
@@ -541,8 +561,12 @@ read_all_ini() {
 	iniread ,ip, %setting_dir%\user.ini, variables, ip,%A_Space%
 	iniread ,password, %setting_dir%\user.ini, variables, Password,%A_Space%
 	iniread ,s_port, %setting_dir%\user.ini, variables, s_port,%A_Space%
-	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
+	iniread ,encryption, %setting_dir%\user.ini, variables, encryption,1	
+	
+	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%	
 	iniread ,selected_profile, %setting_dir%\user.ini, variables, selected_profile,1	
+	
+	
 	For key, value in option_array {		
 			iniread ,%key%, %setting_dir%\user.ini, variables, %key%,0				
 	}
