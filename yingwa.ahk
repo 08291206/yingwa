@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.1.130405" 
+version:= "1.2.130406" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -63,7 +63,7 @@ menu, tool, add, About, about
 Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
-option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
+option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o5_sock5_only:"Use Socks5 only",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
 read_all_ini()
 connected:=0
 if (o2_auto_connect) {
@@ -283,46 +283,52 @@ if (connected=1) ;disconnect if connected
 change_status("connect")
 SplashTextOn, , , connecting...
 read_all_ini()
-FileDelete,%privoxy_dir%\config.txt
-fileread, header,%privoxy_dir%\header.txt
-fileread, filter,%privoxy_dir%\filter.txt
-fileread, whitelist,%privoxy_dir%\whitelist.txt
-config_file := header
-if (!o3_china_sites){				
-	config_file .= whitelist
-}
-if (o4_filter_ads){
-	config_file .= filter
-}
-fileappend,%config_file%,%privoxy_dir%\config.txt
-
-if (encryption=2){
-	en_method="rc4"
-}else {
-	en_method=null
-}
-
-
-myfile=config.json
-content=
-	(
+if (!o5_sock5_only)
 {
-    "server":"%ip%",
-    "server_port":%s_port%,
-    "local_port":65509,
-    "password":"%password%",
-    "timeout":600,
-    "method":%en_method%
-}	
-	)
+	FileDelete,%privoxy_dir%\config.txt
+	fileread, header,%privoxy_dir%\header.txt
+	fileread, filter,%privoxy_dir%\filter.txt
+	fileread, whitelist,%privoxy_dir%\whitelist.txt
+	config_file := header
+	if (!o3_china_sites){				
+		config_file .= whitelist
+	}
+	if (o4_filter_ads){
+		config_file .= filter
+	}
+	fileappend,%config_file%,%privoxy_dir%\config.txt
 
-file := fileopen(myfile, "w")
-file.write(content)
-File.Close()
+	if (encryption=2){
+		en_method="rc4"
+	}else {
+		en_method=null
+	}
 
+
+	myfile=config.json
+	content=
+		(
+	{
+		"server":"%ip%",
+		"server_port":%s_port%,
+		"local_port":65509,
+		"password":"%password%",
+		"timeout":600,
+		"method":%en_method%
+	}	
+		)
+
+	file := fileopen(myfile, "w")
+	file.write(content)
+	File.Close()
+}
 run, %ssocks_exe%,%A_ScriptDir%,hide,ssocks_pid
-IfWinNotExist,ahk_class PrivoxyLogWindow
-	run, %privoxy_dir%\privoxy.exe,%privoxy_dir%,hide,privoxy_pid
+if (!o5_sock5_only){
+	IfWinNotExist,ahk_class PrivoxyLogWindow
+	{
+		run, %privoxy_dir%\privoxy.exe,%privoxy_dir%,hide,privoxy_pid
+	}
+}
 if (!o6_manual_proxy)
 	setproxy("ON")
 change_status("connected")
@@ -352,7 +358,7 @@ Return
 
 check_if_broken:		
 	;return
-	if WinExist(ssocks_exe) && WinExist("ahk_class PrivoxyLogWindow") 
+	if WinExist(ssocks_exe) 
 	{
 		return
 	}
@@ -365,8 +371,10 @@ ExitLabel:
 	{	
 		disconnect_me()	
 	}
-	winclose,ahk_class PrivoxyLogWindow
-	process, close, privoxy.exe
+	
+		winclose,ahk_class PrivoxyLogWindow
+		process, close, privoxy.exe
+	
 	if (o7_clear_info)
 		filedelete, %setting_dir%\user.ini
 		iniwrite ,%o7_clear_info%, %setting_dir%\user.ini, variables, o7_clear_info
