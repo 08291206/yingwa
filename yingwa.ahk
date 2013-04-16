@@ -1,9 +1,33 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.2.130406" 
+version:= "1.3.130416" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
+
+SetWorkingDir %A_ScriptDir%
+SetTitleMatchMode, 2
+DetectHiddenWindows, On
+setting_dir=%A_ScriptDir%
+privoxy_dir=%A_ScriptDir%\privoxy
+
+SplitPath, A_Scriptname, , , , OutNameNoExt 
+LinkFile=%A_Startup%\%OutNameNoExt%.lnk 
+filedelete, %LinkFile%
+FileCreateShortcut, %A_ScriptFullPath%, %LinkFile%,%A_ScriptDir%,-startup
+
+Loop, %0% {
+    If (%A_Index% = "-startup") 
+		startup:=1	
+	}
+
+
+if (startup){
+	setproxy("OFF")
+	iniread ,o1_auto_start, %setting_dir%\user.ini, variables, o1_auto_start,0
+	if (!o1_auto_start)
+		exitapp
+}
 ;acquire admin  
 if not A_IsAdmin
 {
@@ -15,10 +39,7 @@ if not A_IsAdmin
 	}
    exitapp
 }
-;detect log off
-DllCall("kernel32.dll\SetProcessShutdownParameters", UInt, 0x4FF, UInt, 0)
-OnMessage(0x11, "WM_QUERYENDSESSION")
-;end detect
+
 
 
 if (A_Is64bitOS){
@@ -38,16 +59,6 @@ for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
   }
 if (i=2)
 	process, close, yingwa.exe
-
-SetWorkingDir %A_ScriptDir%
-SetTitleMatchMode, 2
-DetectHiddenWindows, On
-setting_dir=%A_ScriptDir%
-privoxy_dir=%A_ScriptDir%\privoxy
-
-
-iniread,ssocks_run, %setting_dir%\user.ini, variables, ssocks_run,0	
-
 
 menu, tray, add,Show menu, ClickHandler
 Menu, Tray, Default,Show menu
@@ -111,10 +122,10 @@ Gui, 1: Add, Text, x12 y30 w80 h20 , Profile:
 gui, 1: Add, DropDownList , vselected_profile gsave_dropdown  choose%selected_profile% AltSubmit x90 y30 w130, %profiles_dropdown%
 Gui, 1: Add, Text, x12 y60 w80 h20 , Server IP:
 Gui, 1: Add, Edit, vip gsave x90 y60 w130 h20 , %ip%
-Gui, 1: Add, Text, x12 y90 w80 h20 , Password:
-Gui, 1: Add, Edit, vpassword gsave x90 y90 w130 h20 , %password%
-Gui, 1: Add, Text, x12 y120 w80 h20 , Server Port:
-Gui, 1: Add, Edit, vs_port gsave x90 y120 w130 h20 , %s_port%
+Gui, 1: Add, Text, x12 y90 w80 h20 , Server Port:
+Gui, 1: Add, Edit, vs_port gsave x90 y90 w130 h20 , %s_port%
+Gui, 1: Add, Text, x12 y120 w80 h20 , Password:
+Gui, 1: Add, Edit, vpassword gsave x90 y120 w130 h20 , %password%
 Gui, 1: Add, Text, x12 y150 w80 h20 , Encryption:
 Gui, 1: Add, radio, vencryption %encryption_checker1% gsave x90 y150 w60 h20 , table
 Gui, 1: Add, radio, gsave %encryption_checker2% x160 y150 w60 h20 , rc4
@@ -246,13 +257,6 @@ For key in option_array {
 	temp_var := %key%
 	iniwrite ,%temp_var%, %setting_dir%\user.ini, variables, %key%	
 }
-;option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Also tunnel websites in China",o4_filter_ads:"Filter ads",o5_rc4:"Use rc4 encryption",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
-if (o1_auto_start)
-	set_startup("set")
-else
-	set_startup("remove")
-return 
-
 quick_connect:
 restore_interface := 0	
 
@@ -416,7 +420,7 @@ global
 	{
 		settimer, check_if_broken, off
 		if (tray_tip=="")
-			tray_tip = Disconnected. %server_str%_%method_str%. Double click to change servers. Single click for menu items.
+			tray_tip = Disconnected. %profile_name%. Double click to change servers. Single click for menu items.
 		tray_tip=%tray_tip%
 		splashtextoff 
 		TrayTip, Yingwa Client, %tray_tip%
@@ -449,7 +453,7 @@ global
 		connected:=1
 		menu,tool,enable,Disconnect	
 		tray_tip = Successfully connected to Yingwa_Client.     
-		Menu,Tray, Tip, Client Connected. %server_str%_%method_str%. 		
+		Menu,Tray, Tip, Client Connected. %profile_name%. 		
 		
 		splashtextoff 
 		disable_dbl_click := 0   
@@ -487,36 +491,6 @@ RegRead(RootKey, SubKey, ValueName = "") {
 	RegRead, v, %RootKey%, %SubKey%, %ValueName%
 	Return, v
 }
-
-
-
-
-WM_QUERYENDSESSION(wParam, lParam)
-{
-    global
-	ENDSESSION_LOGOFF = 0x80000000
-    if (lParam & ENDSESSION_LOGOFF){
-			EventType = Logoff
-			shutdown_code = 0
-	}
-    else{
-			EventType = Shutdown
-			shutdown_code = 9
-	}
-	if (connected=1)
-	{
-		MsgBox, 36,Yingwa,  Click Yes to restore your proxy settings and continue %EventType%.
-		ifmsgbox, Yes
-		{
-			disconnect_me()
-			change_status("disconnect")
-			shutdown,%shutdown_code%
-		}		
-		return true
-	}
-	
-}
-
 profile_no2name(selected_profile){
 	global setting_dir
 	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%
@@ -573,21 +547,10 @@ read_all_ini() {
 	
 	iniread ,profiles, %setting_dir%\user.ini, variables, profiles,%A_Space%	
 	iniread ,selected_profile, %setting_dir%\user.ini, variables, selected_profile,1	
+	profile_name := profile_no2name(selected_profile)
 	
 	
 	For key, value in option_array {		
 			iniread ,%key%, %setting_dir%\user.ini, variables, %key%,0				
-	}
-}
-
-set_startup(action="set") {
-SplitPath, A_Scriptname, , , , OutNameNoExt 
-LinkFile=%A_Startup%\%OutNameNoExt%.lnk 
-	if (action="set") {
-		IfNotExist, %LinkFile% 
-		  FileCreateShortcut, %A_ScriptFullPath%, %LinkFile%   
-		SetWorkingDir, %A_ScriptDir%
-	} else {
-		filedelete, %LinkFile%
 	}
 }
