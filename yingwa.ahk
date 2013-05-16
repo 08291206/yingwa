@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.3.130416" 
+version:= "1.3.130516" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -257,6 +257,7 @@ For key in option_array {
 	temp_var := %key%
 	iniwrite ,%temp_var%, %setting_dir%\user.ini, variables, %key%	
 }
+return
 quick_connect:
 restore_interface := 0	
 
