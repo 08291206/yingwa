@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.3.130516" 
+version:= "1.4.130605" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -75,6 +75,11 @@ Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
 option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o5_sock5_only:"Use Socks5 only",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
+encry_array := ["table","rc4","aes-128-cfb", "aes-192-cfb", "aes-256-cfb", "bf-cfb", "cast5-cfb", "des-cfb", "camellia-128-cfb","camellia-192-cfb","camellia-256-cfb","idea-cfb","rc2-cfb","seed-cfb"]
+encry_dropdown=
+for key,val in encry_array {
+	encry_dropdown .= val . "|" 
+}
 read_all_ini()
 connected:=0
 if (o2_auto_connect) {
@@ -100,7 +105,6 @@ read_all_ini()
 stringreplace,profiles_dropdown, profiles, ````,|,All
 stringreplace,profiles_dropdown,profiles_dropdown,``,,all
 
-
 ;stringsplit,profiles_arr, dropdown_str,|
 profile_name := profile_no2name(selected_profile)
 if (trim(profile_name)!="") {	
@@ -113,8 +117,6 @@ if (trim(profile_name)!="") {
 		selected_profile:=0
 	}
 }
-encryption_checker1 := (encryption=1) ? "checked":""
-encryption_checker2 := (encryption=2) ? "checked":""
 
 restore_interface := 1
 Gui, Add, Tab2, x0 y0 w227 h250 , Basic|Geeky
@@ -127,8 +129,8 @@ Gui, 1: Add, Edit, vs_port gsave x90 y90 w130 h20 , %s_port%
 Gui, 1: Add, Text, x12 y120 w80 h20 , Password:
 Gui, 1: Add, Edit, vpassword gsave x90 y120 w130 h20 , %password%
 Gui, 1: Add, Text, x12 y150 w80 h20 , Encryption:
-Gui, 1: Add, radio, vencryption %encryption_checker1% gsave x90 y150 w60 h20 , table
-Gui, 1: Add, radio, gsave %encryption_checker2% x160 y150 w60 h20 , rc4
+
+gui, 1: Add, DropDownList , vencryption gsave choose%encryption% AltSubmit x90 y150 w130, %encry_dropdown%
 Gui, 1: Add, Button, x12 y180 w40 h30 gsave_profile, Save
 Gui, 1: Add, Button, x52 y180 w50 h30 gdel_profile, Delete
 Gui, 1: Add, Button, x120 y180 w100 h30 Default gconnect_button, %connect_bu%
@@ -217,10 +219,9 @@ if (trim(profile_name)!="") {
 	guicontrol,,ip,%p_ip%
 	guicontrol,,password,%p_password%
 	guicontrol,,s_port,%p_s_port%		
-	encryption_checker1 := (p_encryption=1) ? 1:0
-	encryption_checker2 := (p_encryption=2) ? 1:0
-	guicontrol,,encryption,%encryption_checker1%	
-	guicontrol,,rc4,%encryption_checker2%
+	
+	guicontrol,choose,encryption,%p_encryption%	
+	
 	iniwrite ,%selected_profile%, %setting_dir%\user.ini, variables, selected_profile
 	iniwrite ,%p_ip%, %setting_dir%\user.ini, variables, ip
 	iniwrite ,%p_password%, %setting_dir%\user.ini, variables, Password
@@ -309,7 +310,17 @@ if (!o5_sock5_only)
 		en_method=null
 	}
 
-
+	for key, val in encry_array {
+		if (key == encryption) {
+			if (val=="table") {
+				en_method=null
+			}else {
+				en_method="%val%"
+			}
+			break
+		}
+	}
+	
 	myfile=config.json
 	content=
 		(
