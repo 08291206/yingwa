@@ -1,6 +1,6 @@
 #SingleInstance off ;
 program_name:="Yingwa"
-version:= "1.4.130605" 
+version:= "1.4.130606" 
 ;change icon. Must be here
 menu, Tray, NoStandard
 Menu, Tray, Icon, yingwa.exe, 2, 1
@@ -75,7 +75,7 @@ Menu, Tool, Add,Exit, ExitLabel
 
 DblClickSpeed := DllCall("GetDoubleClickTime") , firstClick := 0
 option_array := {o1_auto_start:"Run on Windows startup", o2_auto_connect:"Connect on program startup",o3_china_sites:"Tunnel all traffic",o4_filter_ads:"Filter ads",o5_sock5_only:"Use Socks5 only",o6_manual_proxy:"Set proxies manually",o7_clear_info:"Delete ALL settings on exit"}
-encry_array := ["table","rc4","aes-128-cfb", "aes-192-cfb", "aes-256-cfb", "bf-cfb", "cast5-cfb", "des-cfb", "camellia-128-cfb","camellia-192-cfb","camellia-256-cfb","idea-cfb","rc2-cfb","seed-cfb"]
+encry_array := ["table","rc4","aes-128-cfb", "aes-192-cfb", "aes-256-cfb", "bf-cfb", "cast5-cfb", "des-cfb"]
 encry_dropdown=
 for key,val in encry_array {
 	encry_dropdown .= val . "|" 
